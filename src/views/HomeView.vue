@@ -22,6 +22,7 @@ import Map from '@/components/Map.vue'
 
 .mapView {
     width: 80%;
+    height: 70vh;
     margin: 0 auto;
     border: 2px solid #ccc;
     border-radius: 8px;

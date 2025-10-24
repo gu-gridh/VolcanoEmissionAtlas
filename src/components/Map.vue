@@ -24,35 +24,69 @@ import { onMounted, ref, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import PlacePreview from './PlacePreview.vue'
+//import placesData from '@/assets/output.geojson'
 
 const selectedPlace = ref(null)
 let map
 
-const places = [
-  { id: 1, title: 'London', lat: 51.505, lng: -0.09, info: 'Some data for London' },
-  { id: 2, title: 'Paris',  lat: 48.8566, lng: 2.3522, info: 'Some data for Paris' },
-]
-
 const close = () => { selectedPlace.value = null }
 
+// triangle icon as an SVG string
+const triangleSVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+  <polygon points="12,2 22,22 2,22"
+           fill="orange"
+           stroke="darkorange"
+           stroke-width="2"
+           filter="url(#shadow)" />
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.5" flood-color="rgba(0,0,0,0.4)" />
+    </filter>
+  </defs>
+</svg>
+`;
+
+
+
 onMounted(() => {
-  map = L.map('map', { zoomControl: true }).setView([51.505, -0.09], 4)
+  map = L.map('map', { zoomControl: true }).setView([-20, 60], 2)
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// Dark basemap (CartoDB Dark Matter — free and fast)
+L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {
+    attribution:
+      '&copy; <a href="https://carto.com/attributions">CARTO</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    subdomains: 'abcd',
     maxZoom: 19
-  }).addTo(map)
+  }
+).addTo(map);
 
-  // Add markers and set place selected
-  places.forEach(p => {
-    const m = L.marker([p.lat, p.lng]).addTo(map)
-    m.on('click', () => {
-      selectedPlace.value = p
-      //zoom to place if not already zoomed in
-        map.setView([p.lat, p.lng], Math.max(map.getZoom(), 6), { animate: true })
-    })
+// Load the volcano GeoJSON
+fetch(`output.geojson`)
+  .then(res => res.json())
+  .then(data => {
+    // Style function for yellow circle markers
+    const volcanoStyle = {
+      radius: 6,
+      fillColor: '#FFD700', // bright yellow
+      color: '#000',         // thin black border
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.8
+    };
+
+    L.geoJSON(data, {
+      pointToLayer: (feature, latlng) => L.circleMarker(latlng, volcanoStyle),
+      onEachFeature: (feature, layer) => {
+        const { name, altitude_m } = feature.properties;
+        layer.bindPopup(`<strong>${name}</strong><br>Alt: ${altitude_m} m`);
+      }
+    }).addTo(map);
   })
-  map.on('click', close)
-})
+  .catch(console.error);
+});
 
 onBeforeUnmount(() => {
   if (map) {
