@@ -6,7 +6,6 @@ import Map from '@/components/Map.vue'
   <div class="home">
     <header class="app-header">
       <h1>Volcano Emission Atlas</h1>
-      <p>This is a prototype application to visualize volcanic emissions data.</p>
     </header>
 
     <!-- Map area fills all remaining height -->
@@ -36,8 +35,7 @@ html, body, #app {
 .app-header {
   flex: 0 0 auto;
   background: #262626;
-  color: #fff;
-  text-align: center;
+  color: #727065;
   padding: 1rem .75rem;
 }
 
