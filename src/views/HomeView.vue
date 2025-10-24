@@ -4,31 +4,49 @@ import Map from '@/components/Map.vue'
 
 <template>
   <div class="home">
-    <h1>Volcano Emission Atlas</h1>
-    <p>This is a prototype application to visualize volcanic emissions data.</p>
-  <div class="mapView">
-    <Map />
-  </div>
+    <header class="app-header">
+      <h1>Volcano Emission Atlas</h1>
+      <p>This is a prototype application to visualize volcanic emissions data.</p>
+    </header>
+
+    <!-- Map area fills all remaining height -->
+    <div class="map-slot">
+      <Map />
+    </div>
   </div>
 </template>
 
-<style scoped>
+<style>
+/* Make the whole app 100% height so flex works */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
 
 .home {
-    text-align: center;
-    width: 100%;
-    margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
 
-.mapView {
-    width: 80%;
-    height: 70vh;
-    margin: 0 auto;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* Header in normal flow (on top) */
+.app-header {
+  flex: 0 0 auto;
+  background: #262626;
+  color: #fff;
+  text-align: center;
+  padding: 1rem .75rem;
 }
 
+/* Map area fills the rest of the screen */
+.map-slot {
+  flex: 1 1 auto;
+  min-height: 0;           /* important so child can shrink within flex container */
+  position: relative;      /* gives the child a positioned ancestor if needed */
+  overflow: hidden;
+  background-color: #262626;
+}
 </style>
-
