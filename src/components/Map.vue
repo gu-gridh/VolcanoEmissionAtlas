@@ -84,7 +84,7 @@ onMounted(() => {
     }
   ).addTo(map)
 
-  // --- Year control (slider + play/pause + display) ---
+  // Year control 
   const YearControl = L.Control.extend({
     onAdd() {
       const container = L.DomUtil.create('div', 'leaflet-bar year-control')
@@ -94,7 +94,7 @@ onMounted(() => {
           <div class="yc-display">${year.value}</div>
         </div>
         <input class="yc-slider" type="range" min="${minYear}" max="${maxYear}" step="1" value="${year.value}" />
-        <div class="yc-minmax"><span>${minYear}</span><span>${maxYear}</span></div>
+        
       `
       L.DomEvent.disableClickPropagation(container)
       L.DomEvent.disableScrollPropagation(container)
@@ -113,15 +113,15 @@ onMounted(() => {
         setYear(Number(e.target.value))
       })
 
-      slider.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-          e.preventDefault(); setYear(Math.max(minYear, year.value - 1))
-        } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-          e.preventDefault(); setYear(Math.min(maxYear, year.value + 1))
-        } else if (e.key === ' ') {
-          e.preventDefault(); btn.click()
-        }
-      })
+      // slider.addEventListener('keydown', (e) => {
+      //   if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      //     e.preventDefault(); setYear(Math.max(minYear, year.value - 1))
+      //   } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      //     e.preventDefault(); setYear(Math.min(maxYear, year.value + 1))
+      //   } else if (e.key === ' ') {
+      //     e.preventDefault(); btn.click()
+      //   }
+      // })
 
       return container
     }
@@ -185,7 +185,6 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
-/* Year control styling */
 :deep(.year-control) {
   background: rgba(0,0,0,.6);
   color: #ffd700;
@@ -193,6 +192,8 @@ onBeforeUnmount(() => {
   border-radius: .5rem;
   width: 260px;
   box-shadow: 0 2px 10px rgba(0,0,0,.35);
+  margin-bottom: 150px;
+  margin-left: 20px;
 }
 
 :deep(.year-control .yc-row) {
@@ -217,7 +218,7 @@ onBeforeUnmount(() => {
 
 :deep(.year-control .yc-slider) {
   width: 100%;
-  accent-color: #ffd700;   /* modern browsers */
+  accent-color: #ffd700;  
 }
 
 :deep(.year-control .yc-minmax) {
