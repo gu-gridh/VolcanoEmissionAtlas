@@ -1,26 +1,31 @@
 <template>
   <div class="map-wrap">
-    <div id="map"></div>
+    <div id="map" />
 
     <!-- Slide-over overlay -->
-    <div v-if="selectedPlace" class="overlay" @keydown.esc="close">
-      <div class="panel" role="dialog" aria-modal="true">
+    <div
+      v-if="selectedPlace"
+      class="overlay"
+      tabindex="0"
+      @keydown.esc="close"
+      ref="overlayEl"
+    >
+      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
         <header class="panel-header">
-          <h3>{{ selectedPlace.title }}</h3>
+          <h3 id="panel-title">{{ selectedPlace.title }}</h3>
           <button class="close-btn" @click="close" aria-label="Close">×</button>
         </header>
 
-        
         <PlacePreview :place="selectedPlace" />
-
       </div>
+
       <div class="backdrop" @click="close" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, onBeforeUnmount } from 'vue'
+import { onMounted, ref, onBeforeUnmount, nextTick } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import PlacePreview from './PlacePreview.vue'
@@ -33,7 +38,10 @@ const maxYear    = 2025
 const tickMs     = 900
 const intervalId = ref(null)
 
+const overlayEl = ref(null)
+
 let map
+let onMapClick 
 
 const close = () => { selectedPlace.value = null }
 
@@ -84,7 +92,7 @@ onMounted(() => {
     }
   ).addTo(map)
 
-  // Year control 
+  // Year control
   const YearControl = L.Control.extend({
     onAdd() {
       const container = L.DomUtil.create('div', 'leaflet-bar year-control')
@@ -94,7 +102,6 @@ onMounted(() => {
           <div class="yc-display">${year.value}</div>
         </div>
         <input class="yc-slider" type="range" min="${minYear}" max="${maxYear}" step="1" value="${year.value}" />
-        
       `
       L.DomEvent.disableClickPropagation(container)
       L.DomEvent.disableScrollPropagation(container)
@@ -113,16 +120,6 @@ onMounted(() => {
         setYear(Number(e.target.value))
       })
 
-      // slider.addEventListener('keydown', (e) => {
-      //   if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-      //     e.preventDefault(); setYear(Math.max(minYear, year.value - 1))
-      //   } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-      //     e.preventDefault(); setYear(Math.min(maxYear, year.value + 1))
-      //   } else if (e.key === ' ') {
-      //     e.preventDefault(); btn.click()
-      //   }
-      // })
-
       return container
     }
   })
@@ -130,7 +127,7 @@ onMounted(() => {
   const ctl = new YearControl({ position: 'bottomleft' })
   map.addControl(ctl)
 
-  //Load geojson data
+  // Load geojson data
   fetch('output.geojson')
     .then(r => r.json())
     .then(data => {
@@ -151,17 +148,25 @@ onMounted(() => {
       }).addTo(map)
     })
 
-  
   setYear(year.value)
   startTick()
+
+  // Click handler — sets selectedPlace
+  onMapClick = (e) => {
+    const { lat, lng } = e.latlng
+    selectedPlace.value = {
+      title: `Location at (${lat.toFixed(2)}, ${lng.toFixed(2)})`,
+      description: `You clicked at latitude ${lat.toFixed(2)} and longitude ${lng.toFixed(2)}.`
+    }
+    nextTick(() => overlayEl.value?.focus())
+  }
+  map.on('click', onMapClick)
 })
 
 onBeforeUnmount(() => {
   stopTick()
-  if (map) {
-    map.off('click', close)
-    map.remove()
-  }
+  if (map && onMapClick) map.off('click', onMapClick)
+  if (map) map.remove()
 })
 </script>
 
@@ -169,6 +174,7 @@ onBeforeUnmount(() => {
 .map-wrap {
   height: 100%;
   width: 100%;
+  position: relative;
 }
 
 #map {
@@ -176,6 +182,55 @@ onBeforeUnmount(() => {
   width: 100%;
   background: #262626;
 }
+
+/* --- Overlay / panel --- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 500;            
+  outline: none;         
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(520px, 92vw);
+  background: #111;
+  color: #eee;
+  box-shadow: -12px 0 30px rgba(0,0,0,.45);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #222;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #161616;
+  border-bottom: 1px solid #222;
+}
+
+.close-btn {
+  appearance: none;
+  border: 0;
+  background: #222;
+  color: #ddd;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.close-btn:hover { background: #2a2a2a; }
 
 .leaflet-control-attribution {
   background: rgba(0,0,0,.4);
@@ -185,6 +240,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
+/* --- Year control styles --- */
 :deep(.year-control) {
   background: rgba(0,0,0,.6);
   color: #ffd700;
