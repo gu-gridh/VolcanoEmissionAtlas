@@ -41,7 +41,7 @@ const intervalId = ref(null)
 const overlayEl = ref(null)
 
 let map
-let onMapClick 
+let geoLayer // keep reference to the GeoJSON layer so we can remove it on unmount
 
 const close = () => { selectedPlace.value = null }
 
@@ -68,6 +68,20 @@ function stopTick() {
   if (!intervalId.value) return
   clearInterval(intervalId.value)
   intervalId.value = null
+}
+
+function getPlaceFromFeature(feature) {
+  // Map your feature.properties into what PlacePreview expects
+  const { name, altitude_m, description } = feature.properties || {}
+  return {
+    title: name ?? 'Unknown place',
+    description:
+      description ??
+      (altitude_m != null
+        ? `Altitude: ${altitude_m} m`
+        : 'No description available'),
+    raw: feature.properties
+  }
 }
 
 onMounted(() => {
@@ -124,10 +138,9 @@ onMounted(() => {
     }
   })
 
-  const ctl = new YearControl({ position: 'bottomleft' })
-  map.addControl(ctl)
+  map.addControl(new YearControl({ position: 'bottomleft' }))
 
-  // Load geojson data
+  // Load GeoJSON and make ONLY points clickable
   fetch('output.geojson')
     .then(r => r.json())
     .then(data => {
@@ -139,34 +152,37 @@ onMounted(() => {
         opacity: 1,
         fillOpacity: 0.8
       }
-      L.geoJSON(data, {
+
+      geoLayer = L.geoJSON(data, {
         pointToLayer: (feature, latlng) => L.circleMarker(latlng, volcanoStyle),
         onEachFeature: (feature, layer) => {
-          const { name, altitude_m } = feature.properties
-          layer.bindPopup(`<strong>${name}</strong><br>Alt: ${altitude_m} m`)
+          // (Optional) popup if you still want it:
+          // const { name, altitude_m } = feature.properties || {}
+          // layer.bindPopup(`<strong>${name ?? 'Unknown'}</strong>${altitude_m ? `<br>Alt: ${altitude_m} m` : ''}`)
+
+          // Only THIS click opens the PlacePreview
+          layer.on('click', () => {
+            selectedPlace.value = getPlaceFromFeature(feature)
+            nextTick(() => overlayEl.value?.focus())
+          })
         }
       }).addTo(map)
     })
 
   setYear(year.value)
   startTick()
-
-  // Click handler — sets selectedPlace
-  onMapClick = (e) => {
-    const { lat, lng } = e.latlng
-    selectedPlace.value = {
-      title: `Location at (${lat.toFixed(2)}, ${lng.toFixed(2)})`,
-      description: `You clicked at latitude ${lat.toFixed(2)} and longitude ${lng.toFixed(2)}.`
-    }
-    nextTick(() => overlayEl.value?.focus())
-  }
-  map.on('click', onMapClick)
 })
 
 onBeforeUnmount(() => {
   stopTick()
-  if (map && onMapClick) map.off('click', onMapClick)
-  if (map) map.remove()
+  if (geoLayer) {
+    geoLayer.remove()
+    geoLayer = null
+  }
+  if (map) {
+    map.remove()
+    map = null
+  }
 })
 </script>
 
