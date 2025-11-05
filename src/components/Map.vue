@@ -41,7 +41,7 @@ const intervalId = ref(null)
 const overlayEl = ref(null)
 
 let map
-let geoLayer // keep reference to the GeoJSON layer so we can remove it on unmount
+let geoLayer 
 
 const close = () => { selectedPlace.value = null }
 
@@ -140,7 +140,7 @@ onMounted(() => {
 
   map.addControl(new YearControl({ position: 'bottomleft' }))
 
-  // Load GeoJSON and make ONLY points clickable
+  // Load GeoJSON 
   fetch('output.geojson')
     .then(r => r.json())
     .then(data => {
@@ -156,11 +156,6 @@ onMounted(() => {
       geoLayer = L.geoJSON(data, {
         pointToLayer: (feature, latlng) => L.circleMarker(latlng, volcanoStyle),
         onEachFeature: (feature, layer) => {
-          // (Optional) popup if you still want it:
-          // const { name, altitude_m } = feature.properties || {}
-          // layer.bindPopup(`<strong>${name ?? 'Unknown'}</strong>${altitude_m ? `<br>Alt: ${altitude_m} m` : ''}`)
-
-          // Only THIS click opens the PlacePreview
           layer.on('click', () => {
             selectedPlace.value = getPlaceFromFeature(feature)
             nextTick(() => overlayEl.value?.focus())
